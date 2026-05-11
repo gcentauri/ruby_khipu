@@ -361,7 +361,7 @@ The paper's interface proposes a base class that is an iterable.
 : imperative_each:   0.266080   0.000249   0.266329 (  0.266360)
 : imperative_while:  0.257264   0.000087   0.257351 (  0.257376)
 
-** COMMENT Create a Knot Abstraction?
+** Create a Knot Abstraction?
 
 Knots are like bytes, in that they could represent different kinds of information.
 For the initial example, we assume that a khipu is composed of groups of cords where
@@ -375,64 +375,128 @@ However, see:
 
 https://nithinbekal.com/posts/numeric-operations-value-objects/
 
-#+begin_src ruby :session knots
-  Knot = Data.define(:digit) do
-    def self.call(...) = new(...)
+#+begin_src ruby :session knots :exports both, :results none
+  Knot = Data.define(:digit, :spin) do
+    @digits = Set.new(0..9).freeze
+    @spins = Set.new(%i[s z u]).freeze
+    def self.digits = @digits
+    def self.spins = @spins
 
-    def to_i = digit.to_i
+    def self.[](...) = new(...)
+    def self.s_spin(digit) = new(digit:, spin: :s)
+    def self.z_spin(digit) = new(digit:, spin: :z)
 
-    def +(other)
-      Knot.new(self.to_i + other.to_i)
+    def initialize(digit:, spin: :u)
+      digit = Integer(digit)
+      spin = spin.to_sym
+      validate(digit, spin)
+
+      super(digit:, spin:)
     end
 
-    def coerce(n)
-      [Knot.new(n), self]
+    def inspect = "#{self.class}<#{digit}:#{spin}>"
+
+    private
+
+    def validate(digit, spin)
+      validate_digit(digit)
+      validate_spin(spin)
+    end
+
+    def validate_digit(digit)
+      return if Knot.digits.include?(digit)
+
+      raise(ArgumentError, "Knots can only be digits from 0-9.")
+    end
+
+    def validate_spin(spin)
+      return if Knot.spins.include?(spin.to_sym)
+
+      raise(ArgumentError, "Spins must be s, z, or u.")
     end
   end
 
-  one, two = [Knot.(1), Knot.(2)]
+  class Long < Knot; end
+  class Figure8 < Knot; end
+#+end_src
 
-  one + two + 3
+#+begin_src ruby :session knots :results output
+  error = begin
+            Knot[10]
+          rescue ArgumentError => e
+            e
+          end
+
+  error2 = begin
+             Knot[digit: 1, spin: :crazy]
+           rescue ArgumentError => e
+             e
+           end
+
+  puts [
+    [Knot[1]],
+    [Knot[digit: 2, spin: :z]],
+    [Knot.s_spin(3)],
+    [Knot.z_spin(4)],
+    [error],
+    [error2]
+  ].inspect
+ #+end_src
+
+ #+RESULTS:
+ : [[Knot<1:u>], [Knot<2:z>], [Knot<3:s>], [Knot<4:z>], [#<ArgumentError: Knots can only be digits from 0-9.>], [#<ArgumentError: Spins must be s, z, or u.>]]
+
+
+*** COMMENT Knot with arithmetic operators and #coerce
+
+This doesn't make sense for a Knot currently, they dont represent full
+Numerics, only the base 10 digit symbols.
+
+#+begin_src ruby :session knots_draft_1
+  Knot = Data.define(:digit) do
+    DIGITS = Set.new(0..9).freeze
+
+    def initialize(digit:)
+      digit = Integer(digit)
+      raise(ArgumentError, "Must be digit 0-9.") unless DIGITS.include?(digit)
+
+      super(digit:)
+    end
+
+    def +(other)
+      wrap(other).then { |wrapped| Knot[digit + wrapped.digit] }
+    end
+
+    def -(other)
+      wrap(other).then { |wrapped| Knot[digit - wrapped.digit] }
+    end
+
+    def *(other)
+      wrap(other).then { |wrapped| Knot[digit * wrapped.digit] }
+    end
+
+    def /(other)
+      wrap(other).then { |wrapped| Knot[digit / wrapped.digit] }
+    end
+
+    def **(n) = Knot[digit**n]
+    def -@ = self * -1
+
+    def coerce(n) = [Knot[n], self]
+    def inspect = "Knot(#{digit})"
+
+    private
+
+    def wrap(value) = value.is_a?(Knot) ? value : Knot[value]
+  end
+
+  [[Knot[1]], [Knot[2]]]
 #+end_src
 
 #+RESULTS:
-: #<data Knot digit=6>
+| Knot | (1) |
+| Knot | (2) |
 
-*** Ruby Numeric#coerce
-
-#+begin_example
-call-seq:
-coerce(other) -> array
-
-Returns a 2-element array containing two numeric elements,
-formed from the two operands +self+ and +other+,
-of a common compatible type.
-
-Of the Core and Standard Library classes,
-Integer, Rational, and Complex use this implementation.
-
-Examples:
-
-i = 2 # => 2
-i.coerce(3) # => [3, 2]
-i.coerce(3.0) # => [3.0, 2.0]
-i.coerce(Rational(1, 2)) # => [0.5, 2.0]
-i.coerce(Complex(3, 4)) # Raises RangeError.
-
-r = Rational(5, 2) # => (5/2)
-r.coerce(2) # => [(2/1), (5/2)]
-r.coerce(2.0) # => [2.0, 2.5]
-r.coerce(Rational(2, 3)) # => [(2/3), (5/2)]
-r.coerce(Complex(3, 4)) # => [(3+4i), ((5/2)+0i)]
-
-c = Complex(2, 3) # => (2+3i)
-c.coerce(2) # => [(2+0i), (2+3i)]
-c.coerce(2.0) # => [(2.0+0i), (2+3i)]
-c.coerce(Rational(1, 2)) # => [((1/2)+0i), (2+3i)]
-c.coerce(Complex(3, 4)) # => [(3+4i), (2+3i)]
-
-Raises an exception if any type conversion fails.
-#+end
 
 ** Reference
 *** Python Interface from the paper
@@ -494,6 +558,47 @@ Raises an exception if any type conversion fails.
   def new_group(self) ...
   def serialize(self, path, indent=4, spaces=0
 #+end_src
+*** Ruby Numeric#coerce
+
+The Numeric types in ruby use the ~coerce~ protocol to handle math operations
+between different types of numbers. Following this protocol with the numerical
+Cord objects may allow transparent arithmetic between Cords and core Ruby
+Numeric types.
+
+#+begin_example
+call-seq:
+coerce(other) -> array
+
+Returns a 2-element array containing two numeric elements,
+formed from the two operands +self+ and +other+,
+of a common compatible type.
+
+Of the Core and Standard Library classes,
+Integer, Rational, and Complex use this implementation.
+
+Examples:
+
+i = 2 # => 2
+i.coerce(3) # => [3, 2]
+i.coerce(3.0) # => [3.0, 2.0]
+i.coerce(Rational(1, 2)) # => [0.5, 2.0]
+i.coerce(Complex(3, 4)) # Raises RangeError.
+
+r = Rational(5, 2) # => (5/2)
+r.coerce(2) # => [(2/1), (5/2)]
+r.coerce(2.0) # => [2.0, 2.5]
+r.coerce(Rational(2, 3)) # => [(2/3), (5/2)]
+r.coerce(Complex(3, 4)) # => [(3+4i), ((5/2)+0i)]
+
+c = Complex(2, 3) # => (2+3i)
+c.coerce(2) # => [(2+0i), (2+3i)]
+c.coerce(2.0) # => [(2.0+0i), (2+3i)]
+c.coerce(Rational(1, 2)) # => [((1/2)+0i), (2+3i)]
+c.coerce(Complex(3, 4)) # => [(3+4i), (2+3i)]
+
+Raises an exception if any type conversion fails.
+#+end
+
 * Footnotes
 
 [fn:1] https://en.wikipedia.org/wiki/Quipu
