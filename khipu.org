@@ -155,7 +155,7 @@ This shows that we are able to define behavior on Ruby objects to express both K
 
 Changing the behavior of ~String~ objects in Ruby would be one way to do this, but we will define new Khipu-specific objects modeling their nature.
 
-** Knots are Compound Data
+** COMMENT Knots are Compound Data
 
 The smallest unit of a Khipu is a ~Knot~.
 
@@ -244,7 +244,8 @@ https://nithinbekal.com/posts/numeric-operations-value-objects/
  :  [#<ArgumentError: Knots can only be digits from 0-9.>],
  :  [#<ArgumentError: Spins must be s, z, or u.>]]
 
-** Strand base class
+** COMMENT Original draft
+*** Strand base class
 
 The paper's interface proposes a base class that is an iterable.
 
@@ -284,7 +285,7 @@ The paper's interface proposes a base class that is an iterable.
   end
 #+end_src
 
-** Cord
+*** Cord
 
 #+begin_src ruby :tangle yes
   class Cord < Strand
@@ -319,7 +320,7 @@ The paper's interface proposes a base class that is an iterable.
   end
 #+end_src
 
-** Group
+*** Group
 
 #+begin_src ruby :tangle yes
   class Group < Strand
@@ -379,7 +380,7 @@ The paper's interface proposes a base class that is an iterable.
   end
 #+end_src
 
-** Khipu
+*** Khipu
 
 #+begin_src ruby :tangle yes
   class Khipu < Strand
@@ -403,7 +404,7 @@ The paper's interface proposes a base class that is an iterable.
   end
 #+end_src
 
-* Notes
+* COMMENT Notes
 ** Optimizing Cord to Integer
 
 #+begin_src ruby :results output :exports both
@@ -455,7 +456,7 @@ The paper's interface proposes a base class that is an iterable.
 : imperative_each:   0.266080   0.000249   0.266329 (  0.266360)
 : imperative_while:  0.257264   0.000087   0.257351 (  0.257376)
 
-** COMMENT Create a Knot Abstraction?
+** Create a Knot Abstraction?
 
 Knots are like bytes, in that they could represent different kinds of information.
 For the initial example, we assume that a khipu is composed of groups of cords where
@@ -590,7 +591,6 @@ Numerics, only the base 10 digit symbols.
 #+RESULTS:
 | Knot | (1) |
 | Knot | (2) |
-
 
 ** Reference
 *** Python Interface from the paper
