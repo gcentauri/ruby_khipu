@@ -3,36 +3,23 @@
 
 * Introduction
 
-A Ruby investigation and implementation of the data structure proposed based
-on the Inka [[https://www.khipufieldguide.com/guidebook/Introduction.html][Khipu]]
-that is proposed in the following paper:
+A Ruby investigation and implementation of the data structure proposed based on the Inka [[https://www.khipufieldguide.com/guidebook/Introduction.html][Khipu]] that is proposed in the following paper:
 
 [[https://ccsenet.org/journal/index.php/cis/article/view/0/52950][Quipu Data Structure]] by Richard Dosselmann, Edward Doolittle, Vatika Tayal
 
 ** What is a Khipu?
 
-The Inkan civilization and people of the central Andes recorded information
-by tying knots into cords of woven threads. Most of what has been deciphered
-is numeric information. The knots are tied on cords in a way to represent a
-base 10 system. One type of knot per digit 1-9, the absence of a knot being
-zero, plus position on a cord encodes any integer. In addition, the khipu
-knots had variations making them easier to read, or encoding additional
-information as signs.
+The Inkan civilization and people of the central Andes recorded information by tying knots into cords of woven threads. Most of what has been deciphered is numeric information. The knots are tied on cords in a way to represent a base 10 system. One type of knot encodes each digit 1-9, while the absence of a knot is zero. Position on a cord encodes units, tens, hundreds and so on. In addition, khipu knots have variations that make them easier to read, or encode additional information as signs.
 
 #+begin_quote
-Since the ones position on quipu cords are shown in a distinctive way (i.e., using
-long knots and figure-eight knots), it is usually clear where a number ends. Thus,
-it is possible that a single quipu cord could contain several numbers.[fn:1]
+Since the ones position on quipu cords are shown in a distinctive way (i.e., using long knots and figure-eight knots), it is usually clear where a number ends. Thus, it is possible that a single quipu cord could contain several numbers.[fn:1]
 #+end_quote
 
-More information is present than has been deciphered. Cords come in different
-colors and weaving styles. Cords are clustered into groups, and some have a
-single cord tied off the top in a different direction.
+Not all types of information Khipus encode has been deciphered. Cords come in different colors and weaving styles. Groups of cords are organized together, and some have a single cord tied off the top in a different direction.
 
 ** A Cord of Knots is an Integer
 
-In the most basic interpretation, we read the combined knots of a cord as an
-integer.
+In the most basic interpretation, we read the combined knots of a cord as an integer.
 
 For example, say we use dashes (~---~) for the cord, then symbols to
 represent knots, which in turn represent a numeral:
@@ -45,10 +32,7 @@ represent knots, which in turn represent a numeral:
 
 Then this cord: ~--●--⸭-----⁛--~ is the integer 1,504.
 
-What matters in this interpretation are the POSITION of the knot and the VALUE
-of the knot as a number. Because POSITION is relevant, we know that the numeral
-4 (⁛) is in the units place, there's an implied zero in the tens, 5 (⸭) in the
-hundreds place, and 1 (●) in the thousands.
+What matters in this interpretation are the POSITION of the knot and the VALUE of the knot as a number. Because POSITION is relevant, we know that the numeral 4 (⁛) is in the units place, there's an implied zero in the tens, 5 (⸭) in the hundreds place, and 1 (●) in the thousands.
 
 ~--1--5--0--4--~
 ~--●--⸭-----⁛--~
@@ -57,62 +41,26 @@ Each cord encodes an integer, with each knot being a base 10 digit.[fn:3]
 
 ** Strands of Information
 
-The Khipu is an information dense object meant for human interpretation.
-Khipu specialists called "khipu-kamayuq", maker-of-knots, encoded structured
-and narrative meaning into the woven cords. There was a spiritual connection
-cloth as a sacred object, and more meaning was added by the knot-makers. We
-will focus on interpreting them as numbers, but the khipu-kamayuq certainly
-had more ways of reading the knots. Even with only numbers, khipu were powerful
-ways of storing and communicating information.
+The Khipu is an information dense object meant for human interpretation. Khipu specialists called "khipu-kamayuq", maker-of-knots, encoded structured and narrative meaning into the woven cords. There was a spiritual connection cloth as a sacred object, and more meaning was added by the knot-makers. We will focus on interpreting them as numbers, but the khipu-kamayuq certainly had more ways of reading the knots. Even with only numbers, khipu were powerful ways of storing and communicating information.
 
 #+begin_quote
-I think of khipu as an ancient form of “spreadsheet”, made from woven cord. That’s
-an intentional metaphor - a spreadsheet both calculates (expected) and communicates
-(unexpected). Most modern khipu scholars agree that khipus serve both purposes, but
-beyond that, much disagreement exists. Our ability to “read” a khipu has been lost,
-and khipus remain one of the few remaining ancient communication mediums that remain
-enigmatic...[fn:2]
+I think of khipu as an ancient form of “spreadsheet”, made from woven cord. That’s an intentional metaphor - a spreadsheet both calculates (expected) and communicates (unexpected). Most modern khipu scholars agree that khipus serve both purposes, but beyond that, much disagreement exists. Our ability to “read” a khipu has been lost, and khipus remain one of the few remaining ancient communication mediums that remain enigmatic...[fn:2]
 #+end_quote
 
-Computer data structures are similar, but built for binary machine
-interpretation first. An integer is stored in memory as a series of zeroes and
-ones. 11000000111001 in binary is 12345 in base 10. It is more efficient for
-humans to use 10 as a base to encode integers, but a computer simply can't.
-Every bit of data is made up of only ones and zeroes. The amazing part is how
-almost anything we can think of is encoded in binary. If a stranger from
-the future found a string of ones-and-zeroes, would the ability to read the
-encoded information be lost as well?
+Computer data structures are similar, but built for binary machine interpretation first. An integer is stored in memory as a series of zeroes and ones. 11000000111001 in binary is 12345 in base 10. It is more efficient for humans to use 10 as a base to encode integers, but a computer simply can't. Every bit of data is made up of only ones and zeroes. The amazing part is how almost anything we can think of is encoded in binary. If a stranger from the future found a string of ones-and-zeroes, would the ability to read the encoded information be lost as well?
 
 ** Weaving and Tangling
 
-Transforming the cloth Khipu, cords woven and knotted by hand, into a computer
-data structure feels like an interesting space between present, past, and future.
-So much of my mind is occupied by computer languages and data modeling. As
-an indigenous American, the opportunity to weave indigenous knowledge and
-ways of communication into my world is a welcome thing.
+Transforming the cloth Khipu, cords woven and knotted by hand, into a computer data structure feels like an interesting space between present, past, and future. So much of my mind is occupied by computer languages and data modeling. As an indigenous American, the opportunity to weave indigenous knowledge and ways of communication into my world is a welcome thing.
 
-This document is written as a [[https://en.wikipedia.org/wiki/Literate_programming#bodyContent][literate program.]] The code blocks encountered
-here are the source for the Ruby code files present in the repository. It is
-a happy coincidence that my favorite way to write is with [[https://orgmode.org/][Org mode for GNU Emacs]].
-It allows us to *tangle* out the source code woven into the document. The tree
-structure of an org-mode document is heirarchical and grouped like Khipu.
-Working with programs this way helps see and understand information in new ways.
+This document is written as a [[https://en.wikipedia.org/wiki/Literate_programming#bodyContent][literate program.]] The code blocks encountered here are the source for the Ruby code files present in the repository. It is a happy coincidence that my favorite way to write is with [[https://orgmode.org/][Org mode for GNU Emacs]]. It allows us to *tangle* out the source code woven into the document. The tree structure of an org-mode document is heirarchical and grouped like Khipu. Working with programs this way helps see and understand information in new ways.
 
 * Implementation
 
-We'll start by implementing my understanding of khipu as an organized system of
-integer data. The paper says a khipu is "heirarchical, partially
-unsorted, grouped and summed". Its a tree structure(heirarchical) that allows
-arbitrary insertion (partially unsorted). Elements of the tree can be grouped,
-and groups have a built in summation via the "top-cord" feature.
+We'll start by implementing my understanding of khipu as an organized system of integer data. The paper says a khipu is "hierarchical, partially unsorted, grouped and summed". It is a tree structure(hierarchical) that allows arbitrary insertion (partially unsorted). Elements of the tree can be grouped, and groups have a built in summation via the "top-cord" feature.
 
-** A Simple Ruby Cord
+If you aren't a programmer, don't worry. I hope that the physical example of the khipu will stay in your mind as we explore how Ruby encodes information in text. The code examples will avoid complexity and illustrate some fundamental parts of thinking with a computer language. If you're curious to know more, [[./ruby.org]] holds my thoughts on understanding it better.
 
-If you aren't a programmer, don't worry. I hope that the physical example
-of the khipu will stay in your mind as we explore how Ruby encodes information
-in text. The code examples will avoid complexity and illustrate some fundamental
-parts of thinking with a computer language. If you're curious to know more,
-[[./ruby.org]] holds my thoughts on understanding it better.
 
 Naively, a ~cord~ could be an ~Array~ that only holds integers from 0-9.
 Here is a sketch of a Cord object which evaluates to an integer:
