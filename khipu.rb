@@ -1,6 +1,4 @@
 class Strand
-  include Enumerable
-
   attr_accessor :knots
 
   def initialize

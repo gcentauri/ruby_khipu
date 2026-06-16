@@ -61,42 +61,188 @@ We'll start by implementing my understanding of khipu as an organized system of 
 
 If you aren't a programmer, don't worry. I hope that the physical example of the khipu will stay in your mind as we explore how Ruby encodes information in text. The code examples will avoid complexity and illustrate some fundamental parts of thinking with a computer language. If you're curious to know more, [[./ruby.org]] holds my thoughts on understanding it better.
 
+** A Cord Made of String
 
-Naively, a ~cord~ could be an ~Array~ that only holds integers from 0-9.
-Here is a sketch of a Cord object which evaluates to an integer:
+To hold to our metaphor, we could use a Ruby object called a ~String~ to make a representation of a Cord.
+
+#+begin_quote
+A String object has an arbitrary sequence of bytes, typically representing text or binary data.
+#+end_quote
+
+Everything in Ruby is an ~Object~, and everything computers work with are made of bytes, which are a collection of bits; either ~0~ or ~1~. The type and direction of a Knot encodes numeric (and/or other) information on a Cord. A ~String~ carries ~character encoding~ which maps a sequence of 8-bit bytes (e.g ~01000011~) to "characters" in a specific set. The most common one in early computing was ~ASCII~, which maps bytes to the English alphabet, numbers, and symbols. These days, ~UTF-8~ is a more common encoding, its what allows things like emoji to be encoded 💾. Here's an example:
 
 #+begin_src ruby :results code :exports both
-  cord = Class.new do
-    attr_reader :knots
-
-    def initialize
-      @knots = []
-    end
-
-    def <<(val) = @knots << val
-    def to_s = @knots.join
-    def to_i = to_s.to_i
-  end
-
-  a_cord = cord.new
-  a_cord << 1 << 2 << 3
-
-  {
-    knots: a_cord.knots,
-    value: a_cord.to_i,
-  }
+  string = String.new("Khipu!")
+  [string,
+   string.encoding,
+   string.bytes]
 #+end_src
 
 #+RESULTS:
 #+begin_src ruby
-{knots: [1, 2, 3], value: 123}
+["Khipu!", #<Encoding:UTF-8>, [75, 104, 105, 112, 117, 33]]
 #+end_src
 
-Adding a knot for 1 in the hundreds place, 2 in the tens, and 3 in the units
-we get the integer 123. The idiomatic Ruby way to convert an array of integers
-into a number is to use ~array.join.to_i~. It isn't going to be the most
-efficient solution to convert cords to numbers, but its intuitive. We can do
-an optimization exercise later.
+Ruby generally shows us a ~String~ literally, surrounded by quotes. The second bit shows sending the /message/ ~encoding~ to the ~string~ object. It /returns/ an ~Encoding~ object that tells us its a UTF-8 encoded string. The last part sends the ~bytes~ message which returns a list (or ~Array~) of numbers. In some ways, this is literally like a khipu's knotted cord. There's several layers of information encoding happening.
+
+*** Building a Cord from a String
+
+Let's build a string for the number 123. Like the example above I will use ~-~ dash characters to stand for an empty place on the cord. Ruby even lets us send the message ~to_i~ to a ~String~ to turn it into an ~Integer~. First build the empty cord, and demonstrate its integer value is zero:
+
+#+begin_src ruby :exports both
+  cord = "---"
+  cord.to_i
+#+end_src
+
+#+RESULTS:
+: 0
+
+Next we want to set the units place to 3. We can interact with a /slice/ of a string using the "index operator" ~[]~. Counting up from ~0~ each slice of the string can be interacted with individually. Here's setting the units place to 3:
+
+#+begin_src ruby :exports both
+  cord = "---"
+  cord[2] = 3.to_s
+  cord
+#+end_src
+
+#+RESULTS:
+: --3
+
+#+begin_src ruby :exports both
+  cord = "---"
+  cord[2] = 3.to_s # set the units
+  cord[1] = 2.to_s # set the tens
+  cord[0] = 1.to_s # set the hundreds
+  cord
+#+end_src
+
+#+RESULTS:
+: 123
+
+So far so good, but if we want to actually use this data for operations beyond just storing information, more work is needed. Strings can be added together, but it doesn't behave in a way that would work for any accounting:
+
+#+begin_src ruby :exports both
+  "123" + "321"
+#+end_src
+
+#+RESULTS:
+: 123321
+
+*** One More Step on this False Start
+
+Ruby has many ways to express data and behavior. One way to allow ~String~ objects to act like Khipu Cords is to define a new /message/ strings can respond to. We call this "define ~method~ for objects of type ~Class~". So we will ~refine~ the ~String~ class with a new ~method~ called ~add_cord~. Then all string objects will know how to respond to receiving the ~add_cord~ message.
+
+#+begin_src ruby :exports both
+  module Khipu
+    refine String do
+      def add_cord(other)
+        result = self.to_i + other.to_i
+        result.to_s
+      end
+    end
+  end
+
+  using Khipu
+
+  cord1 = "123"
+  cord1.add_cord("321")
+#+end_src
+
+#+RESULTS:
+: 444
+
+This shows that we are able to define behavior on Ruby objects to express both Khipu as a heirarchical, partially sorted, grouped and summed data storage object, and a living object that has behavior for changing and interpreting it.
+
+Changing the behavior of ~String~ objects in Ruby would be one way to do this, but we will define new Khipu-specific objects modeling their nature.
+
+** Knots are Compound Data
+
+The smallest unit of a Khipu is a ~Knot~.
+
+Knots are like bytes, in that they could represent different kinds of information. For the initial example, we assume that a khipu is composed of groups of cords where each knot is of the same type. In our case, it is Integers, but a Knot could be anything really. Perhaps the color of the Cord tells you how to interpret the knots in a cord. Practically, keeping the elements of a Cord as Integers, but allowing arbitrarily high numbers would work like a primary key pointer to some other data structure. This would screw up the methods for adding things together.
+
+However, see:
+
+https://nithinbekal.com/posts/numeric-operations-value-objects/
+
+#+name: Knot
+#+begin_src ruby :results none
+  Knot = Data.define(:digit, :spin) do
+    @digits = Set.new(0..9).freeze
+    @spins = Set.new(%i[s z u]).freeze
+    def self.digits = @digits
+    def self.spins = @spins
+
+    def self.[](...) = new(...)
+    def self.s_spin(digit) = new(digit:, spin: :s)
+    def self.z_spin(digit) = new(digit:, spin: :z)
+
+    def initialize(digit:, spin: :u)
+      digit = Integer(digit)
+      spin = spin.to_sym
+      validate(digit, spin)
+
+      super(digit:, spin:)
+    end
+
+    def inspect = "#{self.class}<#{digit}:#{spin}>"
+
+    private
+
+    def validate(digit, spin)
+      validate_digit(digit)
+      validate_spin(spin)
+    end
+
+    def validate_digit(digit)
+      return if Knot.digits.include?(digit)
+
+      raise(ArgumentError, "Knots can only be digits from 0-9.")
+    end
+
+    def validate_spin(spin)
+      return if Knot.spins.include?(spin.to_sym)
+
+      raise(ArgumentError, "Spins must be s, z, or u.")
+    end
+  end
+
+  class Long < Knot; end
+  class Figure8 < Knot; end
+#+end_src
+
+#+begin_src ruby :results output :noweb yes
+  <<Knot>>
+
+  error = begin
+            Knot[10]
+          rescue ArgumentError => e
+            e
+          end
+
+  error2 = begin
+             Knot[digit: 1, spin: :crazy]
+           rescue ArgumentError => e
+             e
+           end
+
+  pp [
+    [Knot[1]],
+    [Knot[digit: 2, spin: :z]],
+    [Long.s_spin(3)],
+    [Figure8.z_spin(4)],
+    [error],
+    [error2]
+  ]
+ #+end_src
+
+ #+RESULTS:
+ : [[#<data Knot digit=1, spin=:u>],
+ :  [#<data Knot digit=2, spin=:z>],
+ :  [#<data Long digit=3, spin=:s>],
+ :  [#<data Figure8 digit=4, spin=:z>],
+ :  [#<ArgumentError: Knots can only be digits from 0-9.>],
+ :  [#<ArgumentError: Spins must be s, z, or u.>]]
 
 ** Strand base class
 
@@ -309,7 +455,7 @@ The paper's interface proposes a base class that is an iterable.
 : imperative_each:   0.266080   0.000249   0.266329 (  0.266360)
 : imperative_while:  0.257264   0.000087   0.257351 (  0.257376)
 
-** Create a Knot Abstraction?
+** COMMENT Create a Knot Abstraction?
 
 Knots are like bytes, in that they could represent different kinds of information.
 For the initial example, we assume that a khipu is composed of groups of cords where
@@ -368,7 +514,7 @@ https://nithinbekal.com/posts/numeric-operations-value-objects/
   class Figure8 < Knot; end
 #+end_src
 
-#+begin_src ruby :session knots :results output
+#+begin_src ruby :session knots :results value
   error = begin
             Knot[10]
           rescue ArgumentError => e
@@ -381,18 +527,18 @@ https://nithinbekal.com/posts/numeric-operations-value-objects/
              e
            end
 
-  puts [
+  [
     [Knot[1]],
     [Knot[digit: 2, spin: :z]],
     [Knot.s_spin(3)],
     [Knot.z_spin(4)],
     [error],
     [error2]
-  ].inspect
+  ]
  #+end_src
 
  #+RESULTS:
- : [[Knot<1:u>], [Knot<2:z>], [Knot<3:s>], [Knot<4:z>], [#<ArgumentError: Knots can only be digits from 0-9.>], [#<ArgumentError: Spins must be s, z, or u.>]]
+ : '((Knot<1:u>)  (Knot<2:z>)  (Knot<3:s>)  (Knot<4:z>)  (#<ArgumentError: Knots can only be digits from 0-9.>)  (#<ArgumentError: Spins must be s  z  or u.>))
 
 
 *** COMMENT Knot with arithmetic operators and #coerce
